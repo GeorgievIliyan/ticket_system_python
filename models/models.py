@@ -1,22 +1,49 @@
 from datetime import date
+from peewee import *
 
-class EvenetHall:
-    def __init__(self, capacity: int, rows: int, created_on: date):
-        self.capacity = capacity
-        self.rows = rows
-        self.created_on = created_on
+db = SqliteDatabase('events.db')
+
+
+class BaseModel(Model):
+    class Meta:
+        database = db
+
+
+class EventHall(BaseModel):
+    capacity = IntegerField()
+    rows = IntegerField()
+    created_on = DateField(default=date.today)
 
     def __str__(self):
         return f"Event hall created on {str(self.created_on)} with capacity of {self.capacity}."
-        
 
-class Ticket:
-    def __init__(self, price: float | int, date: date, person: str, seat: None | str, row: None | str):
-        self.price = price
-        self.date = date
-        self.person = person
-        self.row = row
-        self.seat = seat
+    class Meta:
+        table_name = 'event_halls'
+
+
+class Ticket(BaseModel):
+    price = DecimalField(decimal_places=2)
+    date = DateField()
+    person = CharField(max_length=255)
+    seat = CharField(max_length=50, null=True)
+    row = CharField(max_length=50, null=True)
+    hall = ForeignKeyField(EventHall, backref='tickets', null=True)
 
     def __str__(self):
         return f"Ticket for {self.person} for {self.date}."
+
+    class Meta:
+        table_name = 'tickets'
+
+
+class Account(BaseModel):
+    username = CharField(max_length=255, unique=True)
+    password = CharField(max_length=255)
+    created_on = DateField(default=date.today)
+    token = CharField(max_length=255, null=True)
+
+    def __str__(self):
+        return f"Account with username {self.username} created on {str(self.created_on)}"
+
+    class Meta:
+        table_name = 'accounts'
