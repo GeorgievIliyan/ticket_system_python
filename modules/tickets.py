@@ -1,6 +1,7 @@
 import os
 import qrcode
 from datetime import datetime
+from peewee import fn
 from models.models import Ticket, EventHall
 
 
@@ -25,7 +26,7 @@ def _generate_qr(ticket: Ticket):
 
 
 def list_tickets():
-    tickets = list(Ticket.select())
+    tickets = list(Ticket.select().order_by(Ticket.date))
     if not tickets:
         print("  No tickets found.")
         return
@@ -37,7 +38,28 @@ def list_tickets():
     print()
 
 
-def create_ticket():
+def search_tickets():
+    search_name = input("  Search person name: ").strip()
+    if not search_name:
+        print("  Search string cannot be empty.")
+        return
+    tickets = list(
+        Ticket.select()
+        .where(fn.LOWER(Ticket.person).contains(search_name.lower()))
+        .order_by(Ticket.date)
+    )
+    if not tickets:
+        print(f"  No tickets found for '{search_name}'.")
+        return
+    print(f"\n  ── Search results for '{search_name}' ──")
+    for t in tickets:
+        seat_info = f"Row {t.row}, Seat {t.seat}" if t.row and t.seat else "No seat assigned"
+        hall_info = f"Hall [{t.hall_id}]" if t.hall_id else "No hall"
+        print(f"  [{t.id}] {t.person} | {t.date} | ${t.price} | {seat_info} | {hall_info}")
+    print()
+
+
+def create_ticket(sales_stack=None):
     person = input("  Person name: ").strip()
     try:
         price = float(input("  Price: ").strip())
@@ -62,6 +84,8 @@ def create_ticket():
 
     ticket = Ticket.create(person=person, price=price, date=event_date, row=row, seat=seat, hall=hall)
     print(f"  Ticket [{ticket.id}] created for {person}.")
+    if sales_stack is not None:
+        sales_stack.push(ticket)
     _generate_qr(ticket)
 
 

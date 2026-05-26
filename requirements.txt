@@ -1,0 +1,4 @@
+bcrypt==5.0.0
+peewee==4.0.5
+pillow==12.2.0
+qrcode==8.2
